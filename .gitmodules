@@ -1,0 +1,3 @@
+[submodule "easybuggy"]
+	path = easybuggy
+	url = https://github.com/k-tamura/easybuggy
