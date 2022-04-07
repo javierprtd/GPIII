@@ -4,7 +4,7 @@
 # Date: 24/03/2022
 
 if [ $# -ne 2 ] && [ $# -ne 4 ] && [ $# -ne 6 ]; then
-    echo "Usage: ${0} --install wordpress|webview --analysis wordpress|webview --compile phar|apk";
+    echo "Usage: ${0} --install wordpress|webview --analysis wordpress|webview --compile phar|apk|easybuggy";
     exit 0;
 fi
 
@@ -293,6 +293,14 @@ EOF
     sudo chown alumno:alumno -R build;
     cd ..;
     echo "Done";
+    sleep 0.5;
+    ;;
+  easybuggy)
+    echo "This require privileges...";
+    sudo apt-get -y install maven;
+    cd ${HOME}/GPIII/easybuggy;
+    x-terminal-emulator -e mvn clean install;
+    echo "Access into http://localhost:8080";
     sleep 0.5;
     ;;
   "")
