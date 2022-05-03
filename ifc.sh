@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Author: Javier Partido Rufo
-# Date: 24/03/2022
+# Date: 14/04/2022
 
-if [ $# -ne 2 ] && [ $# -ne 4 ] && [ $# -ne 6 ]; then
-    echo "Usage: ${0} --install wordpress|webview --analysis wordpress|webview --compile phar|apk|easybuggy";
+if [ $# -ne 2 ] && [ $# -ne 4 ] && [ $# -ne 6 ] && [ $# -ne 8 ]; then
+    echo "Usage: ${0} --install wordpress|webview --analysis wordpress|webview --compile phar|apk|easybuggy --proof_unit wordpress|webview";
     exit 0;
 fi
 
@@ -17,6 +17,9 @@ case $1 in
     ;;
   --compile)
     COMPILE="${2}"
+    ;;
+  --proof_unit)
+    PROOF_UNIT="${2}"
     ;;
   *)
     echo "Unknown option ${1}"
@@ -32,6 +35,9 @@ case "$3" in
     ;;
   --compile)
     COMPILE="${4}"
+    ;;
+  --proof_unit)
+    PROOF_UNIT="${4}"
     ;;
   "")
     ;;
@@ -50,6 +56,9 @@ case "$5" in
   --compile)
     COMPILE="${6}"
     ;;
+  --proof_unit)
+    PROOF_UNIT="${6}"
+    ;;
   "")
     ;;
   *)
@@ -57,10 +66,31 @@ case "$5" in
     exit 1
     ;;
 esac
+case "$7" in
+  --install)
+    INSTALL="${8}"
+    ;;
+  --analysis)
+    ANALYSIS="${8}"
+    ;;
+  --compile)
+    COMPILE="${8}"
+    ;;
+  --proof_unit)
+    PROOF_UNIT="${8}"
+    ;;
+  "")
+    ;;
+  *)
+    echo "Unknown option ${7}"
+    exit 1
+    ;;
+esac
 
-echo "INSTALL  = ${INSTALL}"
-echo "ANALYSIS = ${ANALYSIS}"
-echo "COMPILE  = ${COMPILE}"
+echo "INSTALL    = ${INSTALL}"
+echo "ANALYSIS   = ${ANALYSIS}"
+echo "COMPILE    = ${COMPILE}"
+echo "PROOF_UNIT = ${PROOF_UNIT}"
 
 case "$INSTALL" in
   wordpress)
@@ -121,13 +151,14 @@ case "$ANALYSIS" in
       wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.4.0.54424.zip;
       unzip sonarqube-9.4.0.54424.zip;
       rm sonarqube-9.4.0.54424.zip;
-      cd sonarqube-9.4.0.54424/bin/linux-x86-64;
-      echo "Executing de sonarqube server...";
-      sleep 0.5;
-      x-terminal-emulator -e ./sonar.sh console
     fi;
+    cd;
+    cd sonarqube-9.4.0.54424/bin/linux-x86-64;
+    echo "Executing de sonarqube server...";
+    sleep 0.5;
+    x-terminal-emulator -e ./sonar.sh console;
     echo "Second step scan the wordpress code..";
-    echo "Visit http://localhost:9000 with credentials admin/admin . Create project and anote the project name and token login.";
+    echo "Visit http://localhost:9000 with credentials admin/admin|xqZsWD . Create project and anote the project name and token login.";
     sleep 0.5;
     read -p "Enter the project name: " PK;
     read -p "Enter the token login: " LOGIN;
@@ -163,17 +194,18 @@ case "$ANALYSIS" in
       wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.4.0.54424.zip;
       unzip sonarqube-9.4.0.54424.zip;
       rm sonarqube-9.4.0.54424.zip;
-      cd sonarqube-9.4.0.54424/bin/linux-x86-64;
-      echo "Executing de sonarqube server...";
-      sleep 0.5;
-      x-terminal-emulator -e ./sonar.sh console
     fi;
     cd;
+    cd sonarqube-9.4.0.54424/bin/linux-x86-64;
+    echo "Executing de sonarqube server...";
+    sleep 0.5;
+    x-terminal-emulator -e ./sonar.sh console;
     echo "Second step scan the webview code..";
-    echo "Visit http://localhost:9000 with credentials admin/admin . Create project and anote the project name and token login.";
+    echo "Visit http://localhost:9000 with credentials admin/admin|xqZsWD . Create project and anote the project name and token login.";
     sleep 0.5;
     read -p "Enter the project name: " PK;
     read -p "Enter the token login: " LOGIN;
+    cd;
     cd Android-WebView-Example;
     if [ ! grep "systemProp.sonar.host.url" gradle.properties 2>/dev/null ]; then
         printf "systemProp.sonar.host.url=http://localhost:9000" >> gradle.properties;
@@ -221,7 +253,7 @@ try {
     if (file_exists(\$pharFile)) {
         unlink(\$pharFile);
     }
-    
+
     \$phar = new Phar(\$pharFile);
 
     \$phar->startBuffering();
@@ -251,6 +283,20 @@ EOF
     php --define phar.readonly=0 create-phar.php;
     rm create-phar.php;
     echo "wordpress.phar saved in ${PWD}";    
+    sleep 0.5;
+    ;;
+  easybuggy)
+    cd ${HOME}/GPIII;
+    if [ ! "$(ls -A ${HOME}/GPIII/easybuggy 2>/dev/null)" ]; then
+	echo "Download easybuggy...";
+	git clone https://github.com/k-tamura/easybuggy;
+    fi;
+    echo "Compile easybuggy...";
+    echo "This require privileges...";
+    sudo apt-get install -y maven;
+    export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64;
+    mvn clean install;
+    echo "Installed.";
     sleep 0.5;
     ;;
   apk)
@@ -295,14 +341,6 @@ EOF
     echo "Done";
     sleep 0.5;
     ;;
-  easybuggy)
-    echo "This require privileges...";
-    sudo apt-get -y install maven;
-    cd ${HOME}/GPIII/easybuggy;
-    x-terminal-emulator -e mvn clean install;
-    echo "Access into http://localhost:8080";
-    sleep 0.5;
-    ;;
   "")
     ;;
   *)
@@ -310,6 +348,57 @@ EOF
     exit 1;
     ;;
 esac
- 
+
+case "$PROOF_UNIT" in
+  wordpress)
+    if [ ! "$(ls -A /var/www/html 2>/dev/null)" ]; then
+      echo "Wordpress is not installed, you must install wordpress first";
+      exit 1;
+    fi;
+    cd /var/www/html;
+    echo "This require privileges...";
+    sudo apt-get -y install php-xml php-mbstring;
+    wget -O phpunit https://phar.phpunit.de/phpunit-9.5.20.phar;
+    chmod +x phpunit;
+    ./phpunit --version;
+    cat <<EOF > unit_test.php
+<?php
+use PHPUnit\Framework\TestCase;
+require_once('wp-includes/class-wp-error.php');
+
+class Unit_Test extends TestCase
+{
+    public function testError() {
+          \$wp_error = new WP_Error();
+          \$this->assertEmpty(\$wp_error->get_error_code());
+    }
+}
+?>
+EOF
+    ./phpunit unit_test.php 2>&1 | tee log_proof_unit_wordpress.txt;
+    echo "Log saved in ${PWD}/log_proof_unit_wordpress.txt";
+    ;;
+  webview)
+    if [ ! -d "$HOME/Android-WebView-Example" ]; then
+      echo "Webview is not installed, you must install webview first";
+      echo "Aborted";
+      exit 1;
+    fi;
+    cd $HOME/Android-WebView-Example/app;
+    if [ ! grep "androidx.test.ext:junit:1.1.1" build.gradle 2>/dev/null ]; then
+      sed -ie "/androidx.constraintlayout:constraintlayout:1.1.3/a \    testImplementation 'junit:junit:4.12'\n    androidTestImplementation 'androidx.test.ext:junit:1.1.1'\n    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'" build.gradle;
+    fi;
+    cd ..;
+    ./gradlew test 2>&1 | tee log_proof_unit_webview.txt;
+    echo "Log saved in ${PWD}/log_proof_unit_webview.txt";
+    ;;
+  "")
+    ;;
+  *)
+    echo "Invalid proof_unit package ${PROOF_UNIT}";
+    exit 1;
+    ;;
+esac
+
 sleep 0.5;
 exit 0;
